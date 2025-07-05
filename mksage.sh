@@ -2,7 +2,7 @@
 
 #*************************************************************************************************
 #
-#	Copyright (c) 2018-2024 Thomas Kahl
+#	Copyright (c) 2018-2025 Thomas Kahl
 #
 #	Permission is hereby granted, free of charge, to any person obtaining a copy
 #	of this software and associated documentation files (the "Software"), to deal
@@ -67,7 +67,6 @@ done < $1
 
 printf "> = ExteriorAlgebra(GF(2))\n" 
 printf "ngens = Lambda.ngens()\n"
-printf "B = Family(Lambda.gens())\n"
 
 cat $2 > $tmpdir/chainHgen
 printf "\n" >> $tmpdir/chainHgen	
@@ -84,7 +83,7 @@ done < $tmpdir/chainHgen
 for ((i=1; i<=dim; i++))
 do	
 	printf "k0 = -1\n" >> $tmpdir/sagefile
-	printf "S = []\n" >> $tmpdir/sagefile		
+	printf "B$i = []\n" >> $tmpdir/sagefile		
 	for ((j=1; j<=i; j++))
 	do
 		for ((l=1; l<j; l++))
@@ -104,26 +103,18 @@ do
 		do	
 			printf "\t"  >> $tmpdir/sagefile
 		done
-		printf "x = x*B.unrank(k$j)\n" >> $tmpdir/sagefile 					
+		printf "x = x*Lambda.gens()[k$j]\n" >> $tmpdir/sagefile 					
 	done	
 	for ((l=1; l<=i; l++))
 	do	
 		printf "\t"  >> $tmpdir/sagefile
 	done
-	printf "S.append(x)\n" >> $tmpdir/sagefile 							
-	printf "B$i = Family(S)\n" >> $tmpdir/sagefile
-	printf "V$i = VectorSpace(GF(2),B$i.cardinality())\n" >> $tmpdir/sagefile
-	printf "W$i = Family(V$i.basis())\n" >> $tmpdir/sagefile
+	printf "B$i.append(x)\n" >> $tmpdir/sagefile 								
+	printf "V$i = VectorSpace(GF(2),Family(B$i).cardinality())\n" >> $tmpdir/sagefile	
 	printf "def v$i(x):
 \tSUM = V$i.zero()
-\tF = Family(x.support())
-\tfor y in F:
-\t\tx = Lambda.one()\n" >> $tmpdir/sagefile	
-	for ((j=0; j<i; j++))
-	do
-		printf "\t\tx = x*B[y[$j]]\n" >> $tmpdir/sagefile	
-	done
-	printf "\t\tSUM = SUM + W$i.unrank(B$i.rank(x))
+\tfor y in x.monomials():
+\t\tSUM = SUM + V$i.basis()[B$i.index(y)]
 \treturn SUM\n" >> $tmpdir/sagefile
 	printf "G$i = [" >> $tmpdir/sagefile
 	b=0
