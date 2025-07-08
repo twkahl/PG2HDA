@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2018-2024 Thomas Kahl
+	Copyright (c) 2018-2025 Thomas Kahl
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ This file implements a Bison parser to read Promela files.
 
 /*Global variables*/
 
-static int phase, startline, endpreamble, rep, pid, endline, wait;
+static int phase, startline, firststartline, rep, pid, endline, wait;
 static programgraph *pg;
 extern int yylineno;
 static list *variables, *defacts, *danglinglocs, *blks;
@@ -125,7 +125,7 @@ vardefs		: 	vardef {;}
 vardef      :  	STRING '=' NAT_NUMBER {
             		vector *vals;
             		
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) { /*variables are only constructed when the very first programgraph is created*/
+					if (phase == 1 && startline == firststartline && rep == 0) { /*variables are only constructed when the very first programgraph is created*/
 						if ($3 > (long long) INT_MAX) 
 							yyerror("value out of range"); 
 						vals = NewVector(1, sizeof(int));
@@ -138,7 +138,7 @@ vardef      :  	STRING '=' NAT_NUMBER {
             |	STRING '=' '-' NAT_NUMBER {
             		vector *vals;
 					
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {
+					if (phase == 1 && startline == firststartline && rep == 0) {
 						if (- $4 < (long long) INT_MIN) 
 							yyerror("value out of range");																
 						vals = NewVector(1, sizeof(int));
@@ -152,7 +152,7 @@ vardef      :  	STRING '=' NAT_NUMBER {
             		vector *vals;
             		unsigned int dim, i;
 
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {
+					if (phase == 1 && startline == firststartline && rep == 0) {
 						if ($6 > (long long) INT_MAX) 
 							yyerror("value out of range");						
 						dim = (unsigned int) $3;											
@@ -172,7 +172,7 @@ vardef      :  	STRING '=' NAT_NUMBER {
             		vector *vals;
             		unsigned int dim, i;
 
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {
+					if (phase == 1 && startline == firststartline && rep == 0) {
 						if (- $7 < (long long) INT_MIN) 
 							yyerror("value out of range");
 						dim = (unsigned int) $3;	
@@ -191,7 +191,7 @@ vardef      :  	STRING '=' NAT_NUMBER {
             |   STRING '[' NAT_NUMBER ']' '=' '{' values '}' { 
             		unsigned int dim;
                        					
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {						
+					if (phase == 1 && startline == firststartline && rep == 0) {						
 						dim = (unsigned int) $3;
 						if (dim > 100) 
 							yyerror("array dimension > 100");		
@@ -205,7 +205,7 @@ vardef      :  	STRING '=' NAT_NUMBER {
             ;                                            
             
 values		: 	NAT_NUMBER {
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {						
+					if (phase == 1 && startline == firststartline && rep == 0) {						
 						if ($1 > (long long) INT_MAX) 
 							yyerror("value out of range");	
 						$$ = NewVector(1, sizeof(int));
@@ -213,7 +213,7 @@ values		: 	NAT_NUMBER {
 					}						
 				}
 			| 	'-' NAT_NUMBER {
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {
+					if (phase == 1 && startline == firststartline && rep == 0) {
 						if (- $2 < (long long) INT_MIN) 
 							yyerror("value out of range");					
 						$$ = NewVector(1, sizeof(int));
@@ -223,7 +223,7 @@ values		: 	NAT_NUMBER {
 			|	values ',' NAT_NUMBER {
 					int i; 
 					
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {
+					if (phase == 1 && startline == firststartline && rep == 0) {
 						if ($3 > (long long) INT_MAX) 
 							yyerror("value out of range");	
 						$$ = NewVector($1->dim + 1, sizeof(int));
@@ -236,7 +236,7 @@ values		: 	NAT_NUMBER {
 			|	values ',' '-' NAT_NUMBER {
 					int i; 
 					
-					if (phase == 1 && startline == endpreamble + 1 && rep == 0) {
+					if (phase == 1 && startline == firststartline && rep == 0) {
 						if (- $4 < (long long) INT_MIN) 
 							yyerror("value out of range");						
 						$$ = NewVector($1->dim + 1, sizeof(int));
@@ -305,7 +305,7 @@ assignment  : 	varid '=' ariexp {
             		int found = 0;            		          		
             		char str[STRL];
 					
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) { /*defs section or current programgraph*/
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) { /*defs section or current programgraph*/
 						if (variables) {		
 							node = variables;
 							do {
@@ -332,7 +332,7 @@ assignment  : 	varid '=' ariexp {
             		ast *l, *r, *exp;
             		char str[STRL];
             		
-            		if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {          		
+            		if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {          		
 		        		if (variables) {		
 							node = variables;
 							do {
@@ -363,7 +363,7 @@ assignment  : 	varid '=' ariexp {
             		ast *l, *r, *exp;
             		char str[STRL];
             		
-            		if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {		        		 
+            		if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {		        		 
 		        		if (variables) {		
 							node = variables;
 							do {
@@ -392,7 +392,7 @@ assignment  : 	varid '=' ariexp {
             		ast *exp;
             		char str[STRL];
             		
-            		if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+            		if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 		        		var = (intvar *) variables->data;
 		        		exp = NewAst(VAR, 0, var, 0, NULL, NULL);
 		        		$$ = MakeAssignAction(var, exp);
@@ -409,7 +409,7 @@ varid		:	STRING {;}
 			  			printf ("Varid: Out of memory!\n");
 			  			exit(EXIT_FAILURE);		
 					}
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						if ($3->type != NUM && $3->type != NUMEXP)
 							yyerror("invalid expression"); 											
 						sprintf($$, "%s[%d]", $1, Evaluate($3, NULL, NULL));					
@@ -420,7 +420,7 @@ varid		:	STRING {;}
 			;            
             
 ariexp		:   ariexp '+' ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						if (($1->type == NUM || $1->type == NUMEXP)	&& ($3->type == NUM || $3->type == NUMEXP))
 							$$ = NewAst(NUMEXP, PLUS, NULL, 0, $1, $3);
 						else 												
@@ -428,7 +428,7 @@ ariexp		:   ariexp '+' ariexp {
 					}	
 				}
 			|	ariexp '-' ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						if (($1->type == NUM || $1->type == NUMEXP)	&& ($3->type == NUM || $3->type == NUMEXP))
 							$$ = NewAst(NUMEXP, MINUS, NULL, 0, $1, $3);
 						else 	
@@ -436,7 +436,7 @@ ariexp		:   ariexp '+' ariexp {
 					}										
 				}	
 			| 	ariexp '*' ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						if (($1->type == NUM || $1->type == NUMEXP)	&& ($3->type == NUM || $3->type == NUMEXP))
 							$$ = NewAst(NUMEXP, TIMES, NULL, 0, $1, $3);
 						else 												 
@@ -444,7 +444,7 @@ ariexp		:   ariexp '+' ariexp {
 					}		
 				}
 			|	ariexp '/' ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						if (($1->type == NUM || $1->type == NUMEXP)	&& ($3->type == NUM || $3->type == NUMEXP))
 							$$ = NewAst(NUMEXP, DIV, NULL, 0, $1, $3);
 						else 												
@@ -452,7 +452,7 @@ ariexp		:   ariexp '+' ariexp {
 					}		
 				}
 			|	ariexp '%' ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						if (($1->type == NUM || $1->type == NUMEXP)	&& ($3->type == NUM || $3->type == NUMEXP))
 							$$ = NewAst(NUMEXP, MOD, NULL, 0, $1, $3);
 						else 												
@@ -460,7 +460,7 @@ ariexp		:   ariexp '+' ariexp {
 					}		
 				}	
 			|	'(' ariexp ')' {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {										
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {										
 						if ($2->type == VAR) 
 							$$ = NewAst(VAR, 0, $2->node.var, 1, $2->l, $2->r);
 						else if ($2->type == NUM)
@@ -471,7 +471,7 @@ ariexp		:   ariexp '+' ariexp {
 					}		 																
 				}
 			|	'-' ariexp %prec UMINUS {										
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {									
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {									
 						if ($2->type == NUM || $2->type == NUMEXP)
 							$$ = NewAst(NUMEXP, MINUS, NULL, 0, NULL, $2);
 						else 																	
@@ -483,7 +483,7 @@ ariexp		:   ariexp '+' ariexp {
             		intvar *var = NULL;
             		int found = 0;
             		
-            		if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {            				        		
+            		if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {            				        		
 		        		if (variables) {		
 							node = variables;
 							do {
@@ -502,21 +502,21 @@ ariexp		:   ariexp '+' ariexp {
 					free($1);
 				}
 			|	NAT_NUMBER {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 						
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 						
 						$$ = NewAst(NUM, (int) $1, NULL, 0, NULL, NULL);						
 				}
 			|	PID {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(NUM, pid, NULL, 0, NULL, NULL);	
 				}		
           	;          	
             
 sequence    :   assignment {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline)))
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline)))
 						$$ = $1;
 				}			
             |   sequence ';' assignment { 
-            		if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {                     
+            		if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {                     
 		                $$ = ComposeActions($1, $3); 
 		                DeleteList(&$1->assignments, NULL); 
 		                DeleteList(&$3->assignments, NULL);                  
@@ -527,7 +527,7 @@ sequence    :   assignment {
             ;
 
 condition	: 	boolexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						$$ = MakeCondition(CopyAst($1));
 						DeleteAst($1);
 					}	
@@ -535,45 +535,45 @@ condition	: 	boolexp {
 			;	                       
             
 boolexp		:	ariexp IS_EQUAL ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, EQ, NULL, 0, $1, $3);						
 				}
 			|   ariexp IS_L ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, L, NULL, 0, $1, $3);						
 				}
 			|	ariexp IS_LEQ ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline)))	
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline)))	
 						$$ = NewAst(EXP, LEQ, NULL, 0, $1, $3);
 				} 
 			|	ariexp IS_G ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, G, NULL, 0, $1, $3);
 				} 
 			|	ariexp IS_GEQ ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, GEQ, NULL, 0, $1, $3);
 				} 
 			|	ariexp NOT_EQUAL ariexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline)))
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline)))
 						$$ = NewAst(EXP, NEQ, NULL, 0, $1, $3);
 				} 			
 			|	boolexp LOGICAL_AND boolexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, AND, NULL, 0, $1, $3);
 				}
 			|	boolexp LOGICAL_OR boolexp {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, OR, NULL, 0, $1, $3);
 				}
 			| 	'(' boolexp ')' {
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) {
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) {
 						$$ = NewAst(EXP, $2->node.op, NULL, 1, $2->l, $2->r);
 						free($2);
 					}	
 				}	
 			| 	LOGICAL_NEG boolexp {															
-					if (phase == 1 && (yylineno <= endpreamble || (yylineno >= startline && yylineno <= endline))) 
+					if (phase == 1 && (yylineno <= firststartline || (yylineno >= startline && yylineno <= endline))) 
 						$$ = NewAst(EXP, NOT, NULL, 0, NULL, $2);																								
 				}
 			;        			
@@ -1155,7 +1155,7 @@ void ParsePML(FILE *fp, list **varlist, programgraph *pgraph, list **sections, c
 				*sections = InsertElement(sec, *sections);
 			}	     			
    		} 
-   		endpreamble = ((int *) startlines->coord)[0] - 1;
+   		firststartline = ((int *) startlines->coord)[0];
    		DeleteVector(startlines);
    		DeleteVector(times);
    		DeleteVector(endlines);   		
@@ -1221,4 +1221,3 @@ void yyerror(char const *s) {
 	fprintf(stderr, "Error near line %d: %s\n", yylineno, s);  
     exit(EXIT_FAILURE);      
 }
-
