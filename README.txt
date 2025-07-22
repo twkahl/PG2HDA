@@ -88,7 +88,7 @@ Using the option --old, the program may be run as in the first versions. This po
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 EXAMPLES
 
-Suppose that pg2hda has been installed to a Linux system and that the working directory is PG2HDA-2.4 (the extraction directory).
+Suppose that pg2hda has been installed to a Linux system and that the working directory is PG2HDA-2.5 (the extraction directory).
 
 1. An HDA model of the system given by Peterson's mutual exclusion algorithm is obtained by executing the following command:
 
